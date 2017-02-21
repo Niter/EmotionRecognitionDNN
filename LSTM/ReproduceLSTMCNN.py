@@ -28,7 +28,7 @@ SIZE_TEST = NUM_TEST * NUM_VIDEO
 
 # TODO: Make sure the CNN Model is truly reused
 def CNNModel(x, reuse=False):
-    conv_1 = conv_2d(x, 8, [16, 1], activation='relu', regularizer="L2", scope='conv_1', reuse=reuse)
+    conv_1 = conv_2d(x, 8, [32, 1], activation='relu', regularizer="L2", scope='conv_1', reuse=reuse)
     avg_pool_1 = avg_pool_2d(conv_1, [1, 2])
     output_layer_1 = local_response_normalization(avg_pool_1)
 
@@ -41,7 +41,7 @@ def CNNModel(x, reuse=False):
     return output_conv
 
 def FCModel(x, reuse=False):
-    network =  tflearn.fully_connected(x, 256, activation='tanh', regularizer='L2', scope='fc_1', reuse=reuse)
+    network =  tflearn.fully_connected(x, 256, activation='relu', regularizer='L2', scope='fc_1', reuse=reuse)
     network = dropout(network, 0.8)
     return tflearn.fully_connected(network, NUM_OUTPUT_CLASS, activation='softmax', regularizer='L2', scope='fc_2', reuse=reuse)
 
@@ -50,15 +50,14 @@ print('Start Loading Data')
 wholeX = sio.loadmat(DATA_PATH + 'CWTX.mat')['WholeX']
 dataY = sio.loadmat(DATA_PATH + 'CWTY.mat')['WholeY'][0]
 wholeY = np.zeros((NUM_VIDEO * NUM_INTERVIEW, 2))
-wholeY[dataY >= 5, 1] = 1
-wholeY[dataY < 5, 0] = 1
+wholeY[dataY >= 5, 1] = 1  #724
+wholeY[dataY < 5, 0] = 1  #556
 trainX, trainY = wholeX[:SIZE_TRAIN , :, :], wholeY[:SIZE_TRAIN, :]
 testX, testY = wholeX[SIZE_TRAIN:, :, :], wholeY[SIZE_TRAIN:, :]
 print('Finish Loading Data')
 
 # Network building
 input_ = tflearn.input_data([None, NUM_FRAME, NUM_CHANNEL, NUM_SCALE])
-input_ = local_response_normalization(input_)
 
 # Construct a sequence for the input of LSTM. The size is NUM_FRAME
 # TODO: Wrap it with the FCModel code if confirm the model is truly reused
@@ -77,7 +76,7 @@ for frame_index in range(NUM_FRAME):
 fc_output = tf.pack(fc_output, 0)
 
 avg_output = tf.reduce_mean(fc_output, 0)
-net = tflearn.regression(avg_output, optimizer='momentum', learning_rate=0.01, loss='categorical_crossentropy')
+net = tflearn.regression(avg_output, optimizer='sgd', learning_rate=1e-6, loss='categorical_crossentropy')
 
 # Training
 model = tflearn.DNN(net, tensorboard_verbose=0)

@@ -32,3 +32,5 @@ testX, testY = wholeX[SIZE_TRAIN:, :, :], wholeY[SIZE_TRAIN:, :]
 print('Finish Loading Data')
 
 print(testY)
+print(sum(dataY >= 5))
+print(sum(dataY < 5))
