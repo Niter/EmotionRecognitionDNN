@@ -26,6 +26,7 @@ NUM_OUTPUT_CLASS = 2
 SIZE_TRAIN = NUM_TRAIN * NUM_VIDEO
 SIZE_TEST = NUM_TEST * NUM_VIDEO
 
+# TODO: Make sure the CNN Model is truly reused
 def CNNModel(x, reuse=False):
     conv_1 = conv_2d(x, 8, [16, 1], activation='relu', regularizer="L2", scope='conv_1', reuse=reuse)
     avg_pool_1 = avg_pool_2d(conv_1, [1, 2])
@@ -60,14 +61,11 @@ input_ = tflearn.input_data([None, NUM_FRAME, NUM_CHANNEL, NUM_SCALE])
 input_ = local_response_normalization(input_)
 
 # Construct a sequence for the input of LSTM. The size is NUM_FRAME
+# TODO: Wrap it with the FCModel code if confirm the model is truly reused
 lstm_input = []
 for frame_index in range(NUM_FRAME):
     frame_input = tf.reshape(input_[:, frame_index, :, :], [-1, NUM_CHANNEL, NUM_SCALE, 1])
-    # if frame_index > 0: tf.get_variable_scope().reuse_variables()
-    # print('frame_index', frame_index)
     lstm_input.append(CNNModel(frame_input, reuse=(True if frame_index > 0 else False)))
-    # print(lstm_input[-1])
-# lstm_input = tflearn.layers.merge_ops.merge(lstm_input, 'concat', axis=0)
 lstm_input = tf.pack(lstm_input, 1)
 
 seq_lstm = tflearn.lstm(lstm_input, 128, dropout=0.5, return_seq=True)
