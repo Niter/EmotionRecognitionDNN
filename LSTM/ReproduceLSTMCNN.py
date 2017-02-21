@@ -52,9 +52,23 @@ dataY = sio.loadmat(DATA_PATH + 'CWTY.mat')['WholeY'][0]
 wholeY = np.zeros((NUM_VIDEO * NUM_INTERVIEW, 2))
 wholeY[dataY >= 5, 1] = 1  #724
 wholeY[dataY < 5, 0] = 1  #556
+# To test whether the network is trainable (in very low standard)
+# wholeX[dataY >= 5] = np.ones([NUM_FRAME, NUM_CHANNEL, NUM_SCALE])
+# wholeX[dataY < 5] = np.zeros([NUM_FRAME, NUM_CHANNEL, NUM_SCALE])
 trainX, trainY = wholeX[:SIZE_TRAIN , :, :], wholeY[:SIZE_TRAIN, :]
 testX, testY = wholeX[SIZE_TRAIN:, :, :], wholeY[SIZE_TRAIN:, :]
 print('Finish Loading Data')
+
+cnt_class_1 = 0
+index_train = np.ones(SIZE_TRAIN, dtype=np.bool)
+for i in range(SIZE_TRAIN):
+    if dataY[i] >= 5:
+        if cnt_class_1 <= 556: cnt_class_1 += 1
+        else: index_train[i] = False
+trainX = trainX[index_train]
+trainY = trainY[index_train]
+print(trainX.shape)
+print(trainY.shape)
 
 # Network building
 input_ = tflearn.input_data([None, NUM_FRAME, NUM_CHANNEL, NUM_SCALE])
@@ -76,11 +90,13 @@ for frame_index in range(NUM_FRAME):
 fc_output = tf.pack(fc_output, 0)
 
 avg_output = tf.reduce_mean(fc_output, 0)
-net = tflearn.regression(avg_output, optimizer='sgd', learning_rate=1e-6, loss='categorical_crossentropy')
+# For test purpose, use a simple network to predict
+avg_output = tflearn.fully_connected(input_, NUM_OUTPUT_CLASS, activation='softmax', regularizer='L2') 
+net = tflearn.regression(avg_output, optimizer='sgd', learning_rate=1e-2, loss='categorical_crossentropy')
 
 # Training
 model = tflearn.DNN(net, tensorboard_verbose=0)
 print('Start Training')
-model.fit(trainX, trainY, validation_set=(testX, testY), show_metric=True, batch_size=4)
+model.fit(trainX, trainY, validation_set=(testX, testY), show_metric=True, batch_size=16, n_epoch=100)
 unique, counts = np.unique(np.argmax(model.predict(testX), axis=1), return_counts=True)
 print(dict(zip(unique, counts)))
