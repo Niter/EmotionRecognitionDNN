@@ -24,6 +24,13 @@ for index_interview = 1:NUM_INTERVIEW;
     end
 end
 
+% Normalization
+for i = 1:(32);
+    for j = 1:32;
+        WholeX(:, :, i, j) = Normalize(WholeX(:, :, i, j));
+    end
+end
+
 fprintf('Start Store the Transformed Data\n');
-save 'CWTX.mat' WholeX
-save 'CWTY.mat' WholeY
+save 'CWTX_Normalized.mat' WholeX;
+save 'CWTY_Normalzied.mat' WholeY;
